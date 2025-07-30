@@ -28,6 +28,43 @@ const Dashboard = () => {
   const dashboardRef = useRef<HTMLDivElement>(null);
   const shareImageRef = useRef<HTMLDivElement>(null);
 
+  // Responsive scaling for the share dashboard
+  React.useEffect(() => {
+    const updateScale = () => {
+      if (shareImageRef.current) {
+        const container = shareImageRef.current.parentElement;
+        if (container) {
+          const containerWidth = container.clientWidth;
+          const containerHeight = container.clientHeight;
+          const dashboardWidth = 800;
+          const dashboardHeight = 600;
+
+          // Calculate scale based on available space
+          const scaleX = Math.min(containerWidth / dashboardWidth, 1);
+          const scaleY = Math.min(containerHeight / dashboardHeight, 1);
+          const scale = Math.min(scaleX, scaleY, 0.75); // Max scale of 0.75
+
+          shareImageRef.current.style.setProperty(
+            "--dashboard-scale",
+            scale.toString()
+          );
+        }
+      }
+    };
+
+    if (isOpen) {
+      // Update scale when modal opens
+      setTimeout(updateScale, 100);
+
+      // Update scale on window resize
+      window.addEventListener("resize", updateScale);
+
+      return () => {
+        window.removeEventListener("resize", updateScale);
+      };
+    }
+  }, [isOpen]);
+
   // Mock data - replace with actual data from your API
   const userData = {
     name: "John Doe",
@@ -541,28 +578,40 @@ const Dashboard = () => {
       </Card>
 
       {/* Share Dashboard Modal */}
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="3xl">
-        <ModalContent className="bg-background/95 backdrop-blur-lg border border-white/10">
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="5xl">
+        <ModalContent className="bg-background/95 backdrop-blur-lg border border-white/10 max-h-[90vh] overflow-hidden">
           <ModalHeader className="flex flex-col gap-1">
             <h3 className="text-xl font-bold text-white">Share Dashboard</h3>
             <p className="text-sm text-gray-400">
               Download your portfolio snapshot
             </p>
           </ModalHeader>
-          <ModalBody className="space-y-4">
-            <div className="flex justify-center">
-              <div ref={shareImageRef} className="scale-75 origin-top">
+          <ModalBody className="space-y-4 p-0">
+            <div className="flex justify-center items-center w-full overflow-auto">
+              <div
+                ref={shareImageRef}
+                className="transform transition-transform duration-200"
+                style={{
+                  transform: "scale(var(--dashboard-scale, 0.75))",
+                  transformOrigin: "top center",
+                }}
+              >
                 <ShareableDashboard userData={userData} />
               </div>
             </div>
           </ModalBody>
-          <ModalFooter>
-            <Button color="danger" variant="light" onPress={onOpenChange}>
+          <ModalFooter className="flex flex-col sm:flex-row gap-3">
+            <Button
+              color="danger"
+              variant="light"
+              onPress={onOpenChange}
+              className="w-full sm:w-auto"
+            >
               Cancel
             </Button>
             <Button
               color="secondary"
-              className="bg-fuchsia-500/90 text-white"
+              className="bg-fuchsia-500/90 text-white w-full sm:w-auto"
               onPress={generateShareImage}
               isLoading={isGenerating}
               startContent={!isGenerating && <Icon icon="lucide:download" />}
